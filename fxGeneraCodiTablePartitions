@@ -1,0 +1,29 @@
+(
+    NombreColumna as text,
+    ConsultasSeparadasComas as text
+) as table =>
+let
+    // 1. Dividir y limpiar nombres de consultas
+    ListaConsultas = List.Transform(
+        Text.Split(ConsultasSeparadasComas, ","),
+        each Text.Trim(_)
+    ),
+
+    // 2. Generar el texto de cada partición (¡corregido!)
+    ParticionesTexto = List.Transform(
+        ListaConsultas,
+        each "{""" & _ & """, " & _ & "}"
+    ),
+
+    // 3. Construir el código M final
+    CodigoM = 
+        "let
+            " & NombreColumna & " = Table.FromPartitions(""" & NombreColumna & """, {" 
+            & Text.Combine(ParticionesTexto, ", ") & "})
+        in
+            " & NombreColumna,
+
+    // 4. Tabla con el código generado
+    TablaResultado = #table({"Código"}, {{CodigoM}})
+in
+    TablaResultado
